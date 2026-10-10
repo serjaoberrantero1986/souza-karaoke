@@ -1,0 +1,17 @@
+{
+  "name": "karaoke-platform",
+  "version": "0.4.0",
+  "private": true,
+  "packageManager": "pnpm@10.18.3",
+  "scripts": {
+    "dev": "pnpm --filter @karaoke/desktop dev",
+    "dev:web": "pnpm --filter @karaoke/desktop dev:web",
+    "build": "pnpm --filter @karaoke/desktop build",
+    "typecheck": "pnpm --filter @karaoke/desktop typecheck",
+    "lint": "pnpm --filter @karaoke/desktop lint",
+    "test": "pnpm --filter @karaoke/desktop test",
+    "test:e2e": "pnpm --filter @karaoke/desktop test:e2e",
+    "test:electron": "pnpm --filter @karaoke/desktop test:electron",
+    "package:win": "pnpm --filter @karaoke/desktop package:win"
+  }
+}

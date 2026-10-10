@@ -1,0 +1,2 @@
+# Player e fila
+Tela inteira com placeholder de vídeo, título e tamanho da fila. Progresso editável, pausa, reinício, pular, volume, tom limitado e microfone simulado. Busca abre overlay sem parar o timer; pedidos aceitam nome. Fila usa botões de subir/descer (acessíveis por teclado), remover e tocar agora. Intervalo, score fixo e foto simulada completam o fluxo. Referências 152542, 152556, 152609 e 153411. Nenhuma mídia proprietária é reutilizada.

@@ -1,0 +1,20 @@
+node_modules/
+dist/
+dist-electron/
+.pnpm-store/
+test-results/
+playwright-report/
+*.log
+release/
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.tsbuildinfo
+youtube-key.enc
+remote-tokens.json
+.codex/
+.DS_Store
+Thumbs.db
+# Original reference archive (the extracted reference images are in docs).
+docs/*.zip

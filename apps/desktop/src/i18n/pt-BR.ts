@@ -1,0 +1,1 @@
+export const copy = { home: 'Vamos cantar?', welcome: 'Escolha uma música no computador ou leia o QR pelo celular', karaoke: 'Karaokês', settings: 'Configurações', playlists: 'Playlists', history: 'Histórico', back: 'Voltar', search: 'Buscar na sua pasta e no YouTube...', empty: 'Nenhuma música encontrada', searchHint: 'Tente outro nome ou artista.' };

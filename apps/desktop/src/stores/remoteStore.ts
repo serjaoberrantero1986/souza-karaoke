@@ -1,0 +1,33 @@
+import { create } from 'zustand';
+export type RemoteInfo = { links: { host: string; name: string; participant: string; operator: string; participantQr: string; operatorQr: string }[] };
+export type SavedPhoto = { id: string; fileName: string; singer: string; song: string; score: number; createdAt: string; dataUrl?: string };
+export type RemoteRequest = { id: number; action: string; query: string; trackId: string; queueId: string; name: string; role: string; deviceId: string; reaction: string; photoDataUrl: string; pin: string; connectedCount: number; score: number };
+declare global { interface Window { desktop?: {
+  audioOpen: (options: { id: string; videoId: string; bounds: { x: number; y: number; width: number; height: number } }) => Promise<void>;
+  audioBounds: (options: { id: string; bounds: { x: number; y: number; width: number; height: number } }) => Promise<void>;
+  audioClose: (id: string) => Promise<void>;
+  audioSend: (message: AudioPipelineMessage) => void;
+  audioListen: (callback: (message: AudioPipelineMessage) => void) => () => void;
+  quit: () => Promise<void>;
+  setAutoStart: (enabled: boolean) => Promise<void>;
+  setSecondDisplay: (enabled: boolean) => Promise<{ active: boolean; external: boolean }>;
+  selectBackgroundMusic: () => Promise<string>;
+  loadBackgroundMusic: () => Promise<string>;
+  selectLocalLibrary: () => Promise<{ folder: string; tracks: import('../types/track').Track[] } | null>;
+  loadLocalLibrary: () => Promise<{ folder: string; tracks: import('../types/track').Track[] }>;
+  loadYoutubeKey: () => Promise<string>;
+  saveYoutubeKey: (key: string) => Promise<void>;
+  savePhoto: (photo: Omit<SavedPhoto, 'id' | 'fileName' | 'createdAt'> & { dataUrl: string }) => Promise<SavedPhoto>;
+  listPhotos: () => Promise<SavedPhoto[]>;
+  readPhoto: (id: string) => Promise<string>;
+  deletePhoto: (id: string) => Promise<void>;
+  selectPhotoFolder: () => Promise<string>;
+  getPhotoFolder: () => Promise<string>;
+  remoteStart: () => Promise<RemoteInfo>;
+  remoteConfigure: (permanent: boolean) => Promise<RemoteInfo>;
+  remoteStop: () => Promise<void>;
+  remoteListen: (callback: (request: RemoteRequest) => void) => () => void;
+  remoteReply: (reply: { id: number; result?: unknown; error?: string }) => void;
+} } }
+export type AudioPipelineMessage = { id: string; type: 'command' | 'ready' | 'media' | 'error' | 'audio-ready' | 'diagnostic'; status?: string; pitch?: number; volume?: number; time?: number; duration?: number; seekRevision?: number; error?: string; errorCode?: number; frequency?: number; rms?: number };
+export const useRemoteStore = create<{ info: RemoteInfo | null; selected: number; connectedDevices: number; setInfo: (info: RemoteInfo | null) => void; select: (index: number) => void }>(set => ({ info: null, selected: 0, connectedDevices: 0, setInfo: info => set({ info, selected: 0, ...(info ? {} : { connectedDevices: 0 }) }), select: selected => set({ selected }) }));

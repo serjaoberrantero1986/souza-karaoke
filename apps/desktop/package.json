@@ -1,0 +1,76 @@
+{
+  "name": "@karaoke/desktop",
+  "version": "0.4.0",
+  "description": "Aplicativo desktop de karaokê com YouTube, controle pelo celular, fila, pontuação e fotos.",
+  "author": "Meu Karaokê",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:electron": "node scripts/smoke-electron.mjs",
+    "package:win": "pnpm build && electron-builder --win nsis portable"
+  },
+  "dependencies": {
+    "@soundtouchjs/audio-worklet": "2.1.1",
+    "lucide-react": "^0.468.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.4",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.37.0",
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^24.7.2",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.4",
+    "electron": "^38.2.2",
+    "electron-builder": "^26.15.3",
+    "eslint": "^9.37.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.4.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.1",
+    "vite": "^7.1.9",
+    "vitest": "^3.2.4"
+  },
+  "build": {
+    "appId": "br.com.meukaraoke.desktop",
+    "productName": "Meu Karaokê",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "../../logotipo.png",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "Meu-Karaoke-${version}-${arch}-Instalador.${ext}"
+    },
+    "portable": {
+      "artifactName": "Meu-Karaoke-${version}-${arch}-Portatil.${ext}"
+    }
+  }
+}
