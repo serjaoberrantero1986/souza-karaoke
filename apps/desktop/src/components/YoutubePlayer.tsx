@@ -9,7 +9,8 @@ import { CapturedYoutubePlayer } from './CapturedYoutubePlayer';
 
 export function YoutubePlayer({ videoId }: { videoId: string }) {
   const capture = useSettingsStore(state => state.settings.youtubePitch);
-  return capture && window.desktop ? <CapturedYoutubePlayer videoId={videoId}/> : <OfficialYoutubePlayer videoId={videoId}/>;
+  const fallback = usePlayerStore(state => state.audioFallback);
+  return capture && !fallback && window.desktop ? <CapturedYoutubePlayer videoId={videoId}/> : <OfficialYoutubePlayer videoId={videoId}/>;
 }
 function OfficialYoutubePlayer({ videoId }: { videoId: string }) {
   const navigate = useNavigate();

@@ -1,6 +1,6 @@
 {
   "name": "@karaoke/desktop",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Aplicativo desktop de karaokê com YouTube, controle pelo celular, fila, pontuação e fotos.",
   "author": "Meu Karaokê",
   "private": true,

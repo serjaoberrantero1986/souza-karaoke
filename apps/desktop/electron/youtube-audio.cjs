@@ -23,11 +23,12 @@ function registerYoutubeAudio(getBaseUrl) {
   ipcMain.handle('audio:open', async (event, { id, videoId, bounds }) => {
     const owner = allowed(event);
     if (!/^[a-f0-9-]{32,40}$/.test(id) || !/^[A-Za-z0-9_-]{11}$/.test(videoId)) throw new Error('Vídeo inválido.');
+    const initialBounds = safeBounds(bounds);
     close();
     const preferences = { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false };
     const source = new WebContentsView({ webPreferences: preferences });
     source.setBackgroundColor('#000000'); owner.contentView.addChildView(source);
-    source.setBounds(safeBounds(bounds));
+    source.setBounds(initialBounds);
     source.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     source.webContents.on('will-navigate', event => event.preventDefault());
     const captureSession = session.fromPartition(`karaoke-audio-${id}`);
@@ -45,9 +46,17 @@ function registerYoutubeAudio(getBaseUrl) {
     const base = getBaseUrl();
     try {
       await source.webContents.loadURL(`${base}/?youtube-source=${videoId}&pipeline=${id}`);
-      if (active?.id !== id) return;
+      if (active?.id !== id) return { status: 'cancelled' };
       await output.loadURL(`${base}/?audio-output=1&pipeline=${id}`);
-    } catch (error) { close(id); throw error; }
+      return { status: active?.id === id ? 'ready' : 'cancelled' };
+    } catch (error) {
+      // StrictMode, HMR and a quick track change may close this view during loadURL.
+      // An obsolete request must neither report a playback failure nor close its successor.
+      if (active?.id !== id) return { status: 'cancelled' };
+      close(id);
+      console.warn('Falha ao abrir a reprodução de áudio:', error.code || 'LOAD_FAILED');
+      return { status: 'failed', message: 'Não foi possível abrir a reprodução com alteração de tom. Tente reproduzir no tom original ou reinicie o aplicativo.' };
+    }
   });
   ipcMain.handle('audio:bounds', (event, { id, bounds }) => { const owner = allowed(event); if (active?.id === id && active.owner === owner) active.source.setBounds(safeBounds(bounds)); });
   ipcMain.handle('audio:close', (event, id) => { const owner = allowed(event); if (active?.owner === owner) close(id); });

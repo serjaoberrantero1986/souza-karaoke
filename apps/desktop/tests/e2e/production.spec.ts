@@ -33,3 +33,25 @@ test('nome exige PIN e personalização mantém contraste configurável', async 
   await expect(page.locator('.home-welcome')).toHaveCSS('background-image', /linear-gradient/);
   await page.reload(); await expect(page.locator('.brand-name')).toHaveText('Karaokê da Família');
 });
+
+test('nome em branco permanece oculto e título não identifica demonstração', async ({ page }) => {
+  await page.addInitScript(() => { localStorage.setItem('karaoke-settings-v1', JSON.stringify({ version: 6, state: { settings: { operatorPin: '1234' } } })); });
+  await page.goto('/#/settings/about');
+  await page.getByLabel('Nome do programa', { exact: true }).fill(''); await page.getByLabel('PIN para alterar nome').fill('1234');
+  await page.getByRole('button', { name: 'Salvar nome' }).click();
+  await page.goto('/'); await expect(page.locator('.brand-name')).toHaveCount(0); await expect(page).toHaveTitle('Meu Karaokê');
+  await page.reload(); await expect(page.locator('.brand-name')).toHaveCount(0);
+});
+test('sugestão usa o espaço livre sem alterar fonte e histórico recebe novo pedido', async ({ page }) => {
+  await page.addInitScript(() => {
+    const track = { id: 'yt-example', youtubeVideoId: 'M7lc1UVf-VE', title: 'Jorge e Mateus — Uma canção para cantar juntos', artist: 'Canal', duration: 180, source: 'youtube', category: 'YouTube' };
+    localStorage.setItem('karaoke-settings-v1', JSON.stringify({ version: 5, state: { settings: { suggestions: true } } }));
+    localStorage.setItem('karaoke-library-v1', JSON.stringify({ version: 3, state: { history: [{ id: 'real-entry', track, requestedBy: 'Ana', playedAt: new Date().toISOString() }], playlists: [], youtubeTracks: {}, youtubeRatings: {} } }));
+  });
+  await page.goto('/');
+  const button = page.locator('.home-suggestions button');
+  expect(await button.evaluate(el => el.clientWidth)).toBeGreaterThan(300);
+  expect(await button.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+  await page.goto('/#/history'); await page.getByRole('button', { name: /Pedir Jorge e Mateus/ }).click();
+  await expect(page.getByRole('button', { name: 'Fila de músicas (1)' })).toBeVisible();
+});

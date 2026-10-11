@@ -57,3 +57,14 @@ Os artefatos são gerados em `apps/desktop/release`: instalador NSIS e executáv
 ## Versionamento
 
 Instaladores, dependências, arquivos de ambiente, chaves locais e resultados de testes ficam fora do Git. Após clonar, execute `pnpm install` e `pnpm dev`. A chave do YouTube deve ser configurada novamente em cada computador: ela não é publicada no repositório.
+
+## Recuperar o PIN por e-mail
+
+O código de recuperação é enviado pelo aplicativo desktop e vale por 10 minutos, com cinco tentativas e limite de envio. O endereço e o código temporário ficam criptografados pelo Windows neste computador. O PIN atual nunca é enviado por e-mail.
+
+Para ativar o envio, crie no Resend uma chave com permissão **Sending access** restrita ao seu domínio verificado. Cadastre na conta do Windows estas variáveis de ambiente, sem colocá-las neste repositório ou no instalador:
+
+- `KARAOKE_RESEND_API_KEY`: chave criada no Resend.
+- `KARAOKE_RESEND_FROM`: remetente autorizado no formato `Meu Karaokê <karaoke@seu-dominio.com>`.
+
+Defina as variáveis em **Editar as variáveis de ambiente da sua conta** nas Configurações avançadas do Windows, feche o aplicativo e abra-o novamente. Sem esses valores, a recuperação informa que o envio ainda não está ativo. O endereço confirmado fica associado a este computador.

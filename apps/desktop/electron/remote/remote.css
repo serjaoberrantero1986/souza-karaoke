@@ -29,3 +29,7 @@ li{padding:12px;border:1px solid #555;border-radius:14px;margin:8px 0;background
 #brand-title { font-size: clamp(18px, 5vw, 28px); text-align: center; overflow-wrap: anywhere; margin: 12px 0 0; text-shadow: 0 2px 5px #000; }
 #connection { flex-shrink: 0; max-width: 48%; }
 #copyright { display: block; padding: 16px; border-radius: 16px; background: #111d; color: #fff; text-align: center; }
+
+.history-request { display: block; width: 100%; min-width: 0; padding: 4px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.history-request:hover { color: var(--accent); }
+.history-request:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

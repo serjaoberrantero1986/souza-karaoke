@@ -3,7 +3,7 @@ export type RemoteInfo = { links: { host: string; name: string; participant: str
 export type SavedPhoto = { id: string; fileName: string; singer: string; song: string; score: number; createdAt: string; dataUrl?: string };
 export type RemoteRequest = { id: number; action: string; query: string; trackId: string; queueId: string; name: string; role: string; deviceId: string; reaction: string; photoDataUrl: string; pin: string; connectedCount: number; score: number };
 declare global { interface Window { desktop?: {
-  audioOpen: (options: { id: string; videoId: string; bounds: { x: number; y: number; width: number; height: number } }) => Promise<void>;
+  audioOpen: (options: { id: string; videoId: string; bounds: { x: number; y: number; width: number; height: number } }) => Promise<{ status: 'ready' | 'cancelled' | 'failed'; message?: string }>;
   audioBounds: (options: { id: string; bounds: { x: number; y: number; width: number; height: number } }) => Promise<void>;
   audioClose: (id: string) => Promise<void>;
   audioSend: (message: AudioPipelineMessage) => void;
@@ -17,6 +17,11 @@ declare global { interface Window { desktop?: {
   loadLocalLibrary: () => Promise<{ folder: string; tracks: import('../types/track').Track[] }>;
   loadYoutubeKey: () => Promise<string>;
   saveYoutubeKey: (key: string) => Promise<void>;
+  recoveryStatus: () => Promise<{ email: string }>;
+  recoverySendEmailCode: (email: string) => Promise<void>;
+  recoveryConfirmEmail: (code: string) => Promise<{ email: string }>;
+  recoverySendResetCode: () => Promise<void>;
+  recoveryResetPin: (code: string, pin: string) => Promise<{ pin: string }>;
   savePhoto: (photo: Omit<SavedPhoto, 'id' | 'fileName' | 'createdAt'> & { dataUrl: string }) => Promise<SavedPhoto>;
   listPhotos: () => Promise<SavedPhoto[]>;
   readPhoto: (id: string) => Promise<string>;

@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, safeStorage, screen } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { randomBytes, createHash } = require('node:crypto');
+const { randomBytes, createHash, timingSafeEqual } = require('node:crypto');
 const { startRendererServer } = require('./renderer-server.cjs');
 const { startRemoteServer } = require('./remote-server.cjs');
 const { registerYoutubeAudio } = require('./youtube-audio.cjs');
@@ -63,6 +63,67 @@ app.whenReady().then(async () => {
   ipcMain.handle('library:load', async () => { try { const saved = JSON.parse(await fs.readFile(localLibraryFile, 'utf8')); return await scanLocalLibrary(saved.folder); } catch (error) { if (error.code === 'ENOENT') return { folder: '', tracks: [] }; throw error; } });
   const credentialFile = path.join(app.getPath('userData'), 'youtube-key.enc');
   const canEncrypt = () => safeStorage.isEncryptionAvailable() && !(process.platform === 'linux' && safeStorage.getSelectedStorageBackend() === 'basic_text');
+  const recoveryFile = path.join(app.getPath('userData'), 'pin-recovery.enc');
+  async function loadRecovery() {
+    try {
+      if (!canEncrypt()) throw new Error('Proteção do sistema indisponível.');
+      return JSON.parse(safeStorage.decryptString(await fs.readFile(recoveryFile)));
+    } catch (error) { if (error.code === 'ENOENT') return { email: '', challenge: null, sentAt: [] }; throw error; }
+  }
+  async function saveRecovery(state) {
+    if (!canEncrypt()) throw new Error('Proteção do Windows indisponível. Os dados de recuperação não foram salvos.');
+    await fs.writeFile(recoveryFile, safeStorage.encryptString(JSON.stringify(state)), { mode: 0o600 });
+  }
+  async function sendRecoveryCode(email, purpose) {
+    const apiKey = process.env.KARAOKE_RESEND_API_KEY;
+    const from = process.env.KARAOKE_RESEND_FROM || 'Meu Karaokê <onboarding@resend.dev>';
+    if (!apiKey) throw new Error('O envio de recuperação ainda não foi configurado neste computador.');
+    if (!/^.{1,80}\s*<[^<>\s]+@[^<>\s]+>$/.test(from) || from.length > 150) throw new Error('O remetente do e-mail está inválido.');
+    const state = await loadRecovery(); const now = Date.now();
+    state.sentAt = (state.sentAt || []).map(item => typeof item === 'number' ? { time: item, purpose: 'reset' } : item).filter(item => now - item.time < 86_400_000);
+    if (state.sentAt.some(item => item.purpose === purpose && now - item.time < 60_000)) throw new Error('Aguarde um minuto antes de solicitar outro código.');
+    if (state.sentAt.length >= 5) throw new Error('O limite diário de códigos foi atingido. Tente novamente amanhã.');
+    if (purpose === 'reset' && (!state.email || email !== state.email)) throw new Error('Configure e confirme um e-mail de recuperação primeiro.');
+    if (purpose === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || '')) throw new Error('Informe um endereço de e-mail válido.');
+    const destination = purpose === 'reset' ? state.email : email.toLowerCase();
+    const code = String(randomBytes(4).readUInt32BE() % 1_000_000).padStart(6, '0');
+    state.sentAt.push({ time: now, purpose });
+    state.challenge = { purpose, email: destination, hash: createHash('sha256').update(`${destination}:${purpose}:${code}`).digest('hex'), expiresAt: now + 10 * 60_000, attempts: 0 };
+    await saveRecovery(state);
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to: [destination], subject: purpose === 'reset' ? 'Código para redefinir o PIN do karaokê' : 'Confirme o e-mail de recuperação do karaokê', text: `Seu código é ${code}. Ele expira em 10 minutos. Se você não solicitou este código, ignore esta mensagem.` }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!response.ok) { state.challenge = null; await saveRecovery(state); throw new Error('O Resend não conseguiu enviar o e-mail. Confira o remetente autorizado e tente novamente.'); }
+  }
+  ipcMain.handle('recovery:status', async () => ({ email: (await loadRecovery()).email || '' }));
+  ipcMain.handle('recovery:send-email-code', async (_event, email) => {
+    await sendRecoveryCode(String(email || '').trim().toLowerCase(), 'email');
+  });
+  ipcMain.handle('recovery:confirm-email', async (_event, code) => {
+    const state = await loadRecovery(); const challenge = state.challenge;
+    const expected = createHash('sha256').update(`${challenge?.email}:email:${String(code || '')}`).digest();
+    const actual = Buffer.from(challenge?.hash || '', 'hex');
+    if (!challenge || challenge.purpose !== 'email' || Date.now() > challenge.expiresAt || actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
+      if (challenge) { challenge.attempts++; if (challenge.attempts >= 5 || Date.now() > challenge.expiresAt) state.challenge = null; await saveRecovery(state); }
+      throw new Error('Código incorreto ou expirado. Solicite outro e-mail.');
+    }
+    state.email = challenge.email; state.challenge = null; await saveRecovery(state); return { email: state.email };
+  });
+  ipcMain.handle('recovery:send-reset-code', async () => { const state = await loadRecovery(); await sendRecoveryCode(state.email, 'reset'); });
+  ipcMain.handle('recovery:reset-pin', async (_event, { code, pin }) => {
+    if (!/^\d{4,8}$/.test(String(pin || ''))) throw new Error('O novo PIN deve ter de 4 a 8 números.');
+    const state = await loadRecovery(); const challenge = state.challenge;
+    const expected = createHash('sha256').update(`${challenge?.email}:reset:${String(code || '')}`).digest();
+    const actual = Buffer.from(challenge?.hash || '', 'hex');
+    if (!challenge || challenge.purpose !== 'reset' || Date.now() > challenge.expiresAt || actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
+      if (challenge) { challenge.attempts++; if (challenge.attempts >= 5 || Date.now() > challenge.expiresAt) state.challenge = null; await saveRecovery(state); }
+      throw new Error('Código incorreto ou expirado. Solicite outro e-mail.');
+    }
+    state.challenge = null; await saveRecovery(state);
+    return { pin: String(pin) };
+  });
   ipcMain.handle('youtube:load-key', async () => {
     try { if (!canEncrypt()) throw new Error('Proteção do sistema indisponível.'); return safeStorage.decryptString(await fs.readFile(credentialFile)); }
     catch (error) { if (error.code === 'ENOENT') return ''; throw new Error('Não foi possível recuperar a chave protegida. Configure-a novamente.'); }

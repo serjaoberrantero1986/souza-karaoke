@@ -1,5 +1,5 @@
 import type { AppTheme } from '../types/settings';
-export const programName = (theme: AppTheme) => theme.programName?.trim() || 'Meu Karaokê';
+export const programName = (theme: AppTheme) => theme.programName === undefined ? 'Meu Karaokê' : theme.programName.trim();
 export function welcomeStyle(theme: AppTheme) {
   const color = (value: string | undefined, fallback: string) => /^#[\da-f]{6}$/i.test(value || '') ? value! : fallback;
   const opacity = Math.max(0, Math.min(100, theme.messageOpacity ?? 85));

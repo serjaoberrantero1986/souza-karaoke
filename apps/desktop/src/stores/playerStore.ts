@@ -6,7 +6,7 @@ import { useQueueStore } from './queueStore';
 import { useSettingsStore } from './settingsStore';
 import { useLibraryStore } from './libraryStore';
 type PlayerStore = PlayerState & {
-  sessionTracks: QueueItem[]; sessionIndex: number; previous: () => void; scoreNotice: string;
+  audioFallback: boolean; sessionTracks: QueueItem[]; sessionIndex: number; previous: () => void; scoreNotice: string;
   seekRevision: number; playbackRevision: number; syncMedia: (time: number, duration: number) => void;
   play: (track: Track, requestedBy?: string, interval?: boolean, requestedByDeviceId?: string, sessionIndex?: number) => void; pause: () => void; resume: () => void; skip: () => void; restart: () => void;
   stop: () => void; tick: () => void; startNow: () => void; finish: () => void; advance: () => void;
@@ -15,12 +15,12 @@ type PlayerStore = PlayerState & {
   increasePitch: () => void; decreasePitch: () => void; resetPitch: () => void; setVolume: (volume: number) => void; seek: (time: number) => void; setStatus: (status: PlayerStatus) => void;
 };
 export const usePlayerStore = create<PlayerStore>((set, get) => ({
-  sessionTracks: [], sessionIndex: -1, scoreNotice: '', seekRevision: 0, playbackRevision: 0,
+  audioFallback: false, sessionTracks: [], sessionIndex: -1, scoreNotice: '', seekRevision: 0, playbackRevision: 0,
   syncMedia: (currentTime, duration) => set({ currentTime, duration }),
   status: 'idle', currentTrack: null, requestedBy: 'Operador', requestedByDeviceId: undefined, currentTime: 0, duration: 0, pitch: 0, volume: 80, microphoneLevel: 0, countdown: 7, score: 0, scoreTarget: 0, reactions: {}, photoDataUrl: undefined, vocal: { samples: 0, voiced: 0, pitchSamples: 0, pitchSum: 0, pitchSquareSum: 0, minHz: 0, maxHz: 0 },
   play: (track, requestedBy = 'Operador', interval = false, requestedByDeviceId, sessionIndex) => {
     if (sessionIndex === undefined) { const entries = [...get().sessionTracks]; const index = get().sessionIndex + 1; entries.splice(index, 0, { id: crypto.randomUUID(), track, requestedBy, requestedByDeviceId }); set({ sessionTracks: entries, sessionIndex: index }); } else set({ sessionIndex });
- const settings = useSettingsStore.getState().settings; set({ scoreNotice: '', playbackRevision: get().playbackRevision + 1, microphoneLevel: 0, currentTrack: track, requestedBy, requestedByDeviceId, duration: track.duration, currentTime: 0, status: interval && settings.intervalSeconds > 0 ? 'intermission' : 'playing', countdown: settings.intervalSeconds, pitch: settings.rememberPitch ? get().pitch : 0, score: 0, scoreTarget: 0, reactions: {}, photoDataUrl: undefined, vocal: { samples: 0, voiced: 0, pitchSamples: 0, pitchSum: 0, pitchSquareSum: 0, minHz: 0, maxHz: 0 } }); },
+ const settings = useSettingsStore.getState().settings; set({ audioFallback: false, scoreNotice: '', playbackRevision: get().playbackRevision + 1, microphoneLevel: 0, currentTrack: track, requestedBy, requestedByDeviceId, duration: track.duration, currentTime: 0, status: interval && settings.intervalSeconds > 0 ? 'intermission' : 'playing', countdown: settings.intervalSeconds, pitch: settings.rememberPitch ? get().pitch : 0, score: 0, scoreTarget: 0, reactions: {}, photoDataUrl: undefined, vocal: { samples: 0, voiced: 0, pitchSamples: 0, pitchSum: 0, pitchSquareSum: 0, minHz: 0, maxHz: 0 } }); },
   pause: () => { if (get().status === 'playing') set({ status: 'paused', microphoneLevel: 0 }); },
   resume: () => { if (get().status === 'paused') set({ status: 'playing' }); },
   previous: () => { const state = get(); const index = state.currentTrack ? state.sessionIndex - 1 : state.sessionIndex; const previous = state.sessionTracks[index]; if (previous) get().play(previous.track, previous.requestedBy, false, previous.requestedByDeviceId, index); },
