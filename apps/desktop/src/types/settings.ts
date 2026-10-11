@@ -7,6 +7,6 @@ export type Settings = {
   youtubeRegion: string; youtubePitch: boolean; pitchButtons: boolean; rememberPitch: boolean; showQueue: boolean; autoNext: boolean; intervalSeconds: number; rateYoutube: boolean;
   showQr: boolean; permanentQr: boolean; requestName: boolean; allowAdd: boolean; maxRequests: number; requestInterval: number; allowPlayback: boolean; allowPitch: boolean; allowQueue: boolean; allowReactions: boolean; multipleReactions: boolean;
   operatorEnabled: boolean; operatorPin: string; twoMonitors: boolean;
-  photoEnabled: boolean; photoFolder: string; photoCountdown: number; photoMinimum: number; photoDownload: boolean; photoFrame: string; photoStampName: boolean; photoStampSong: boolean; photoStampDate: boolean; photoStampScore: boolean; photoStampLogo: boolean;
+  photoEnabled: boolean; photoFolder: string; photoMinimum: number; photoDownload: boolean; photoFrame: string; photoStampName: boolean; photoStampSong: boolean; photoStampDate: boolean; photoStampScore: boolean; photoStampLogo: boolean;
   suggestions: boolean; suggestionSource: string; shortcuts: Record<string, string>;
 };

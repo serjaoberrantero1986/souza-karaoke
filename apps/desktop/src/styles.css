@@ -196,13 +196,14 @@ svg { flex-shrink: 0; }
 .singer-result .score { line-height: 1; }
 .singer-result .score small { display: block; font-size: 18px; color: var(--text-muted); }
 .singer-result progress { width: min(500px, 60vw); accent-color: var(--accent); height: 12px; }
-.app-shell { --home-mark-size: min(calc(13.35vw - 34px), 230px); }
+.app-shell { --home-mark-size: min(13.35vw, 256px); }
 .brand-position { width: var(--home-mark-size); }
+.brand-image { max-width: 256px; }
 .control-row .button { background: transparent; border: 0; color: var(--text-primary); padding: 6px; font-size: 12px; }
 .control-row .button svg { width: 64px; height: 64px; padding: 17px; border-radius: 50%; background: var(--control); border: 1px solid var(--border); }
 .control-row .button.primary svg { background: var(--accent); color: #111; border-color: var(--accent); }
-@media(max-width:1600px) { .app-shell { --home-mark-size: calc(13vw - 26px); } }
-@media(max-width:1366px) { .app-shell { --home-mark-size: calc(12vw - 20px); } }
+@media(max-width:1600px) { .app-shell { --home-mark-size: 13vw; } }
+@media(max-width:1366px) { .app-shell { --home-mark-size: 12vw; } }
 
 /* Session identity and readable welcome panel. */
 .brand-identity { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }

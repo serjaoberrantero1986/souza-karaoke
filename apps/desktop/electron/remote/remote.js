@@ -108,15 +108,51 @@ function renderRatings(state) {
     button.disabled = !!state.rating && !state.permissions.multipleReactions;
   });
 }
-el('photo').addEventListener('change', async event => {
-  const file = event.target.files[0]; if (!file) return; el('message').textContent = 'Preparando foto…';
+let pendingPhotoBitmap;
+let photoEdit = { rotation: 0, zoom: 1, brightness: 100, contrast: 100, saturation: 100, panX: 0, panY: 0 };
+const photoCanvas = el('photo-canvas');
+function releasePendingPhoto() { pendingPhotoBitmap?.close(); pendingPhotoBitmap = undefined; }
+function renderPhotoCanvas() {
+  if (!pendingPhotoBitmap) return;
+  const [ratioWidth, ratioHeight] = el('photo-ratio').value.split(':').map(Number);
+  photoCanvas.width = ratioWidth >= ratioHeight ? 960 : 720;
+  photoCanvas.height = Math.round(photoCanvas.width * ratioHeight / ratioWidth);
+  const context = photoCanvas.getContext('2d'); const width = photoCanvas.width; const height = photoCanvas.height;
+  context.fillStyle = '#151515'; context.fillRect(0, 0, width, height);
+  const radians = photoEdit.rotation * Math.PI / 180; const cosine = Math.abs(Math.cos(radians)); const sine = Math.abs(Math.sin(radians));
+  const rotatedWidth = pendingPhotoBitmap.width * cosine + pendingPhotoBitmap.height * sine; const rotatedHeight = pendingPhotoBitmap.width * sine + pendingPhotoBitmap.height * cosine;
+  const scale = Math.max(width / rotatedWidth, height / rotatedHeight) * photoEdit.zoom;
+  context.save(); context.translate(width / 2 + photoEdit.panX * width / 100, height / 2 + photoEdit.panY * height / 100); context.rotate(radians); context.scale(scale, scale);
+  context.filter = `brightness(${photoEdit.brightness}%) contrast(${photoEdit.contrast}%) saturate(${photoEdit.saturation}%)`;
+  context.drawImage(pendingPhotoBitmap, -pendingPhotoBitmap.width / 2, -pendingPhotoBitmap.height / 2); context.restore(); context.filter = 'none';
+  if (currentPerformance.photoFrame === 'Evento' || currentPerformance.photoFrame === 'Polaroid') { const size = Math.max(12, Math.round(width / (currentPerformance.photoFrame === 'Evento' ? 55 : 28))); context.strokeStyle = currentPerformance.photoFrame === 'Evento' ? '#ff8a00' : '#fff'; context.lineWidth = size; context.strokeRect(size / 2, size / 2, width - size, height - size); }
+  const stamp = currentPerformance.photoStamp || {}; const lines = []; if (stamp.logo) lines.push('MEU KARAOKÊ'); if (stamp.name) lines.push(currentPerformance.singer || 'Participante'); if (stamp.song) lines.push(currentPerformance.current || ''); if (stamp.score) lines.push(`${currentPerformance.score || 0} pontos`); if (stamp.date) lines.push(new Date().toLocaleString('pt-BR'));
+  if (lines.length) { const fontSize = Math.max(18, Math.round(width / 42)); const padding = fontSize; const bannerHeight = lines.length * fontSize * 1.35 + padding * 1.4; context.fillStyle = 'rgba(0,0,0,.68)'; context.fillRect(0, height - bannerHeight, width, bannerHeight); context.font = `600 ${fontSize}px system-ui`; context.fillStyle = '#fff'; lines.forEach((line, index) => context.fillText(String(line).slice(0, 80), padding, height - bannerHeight + padding + fontSize * (index + .7), width - padding * 2)); }
+}
+function openPhotoEditor(file) {
+  const reader = file ? createImageBitmap(file) : Promise.reject(new Error('Não foi possível abrir a foto.'));
+  reader.then(bitmap => { releasePendingPhoto(); pendingPhotoBitmap = bitmap; photoEdit = { rotation: 0, zoom: 1, brightness: 100, contrast: 100, saturation: 100, panX: 0, panY: 0 }; ['zoom', 'brightness', 'contrast', 'saturation'].forEach(key => { el(`photo-${key}`).value = photoEdit[key]; }); el('photo-ratio').value = '4:3'; el('photo-editor-message').textContent = ''; renderPhotoCanvas(); el('photo-editor').showModal(); }).catch(error => { el('message').textContent = error.message || 'Não foi possível abrir a foto.'; });
+}
+el('photo').addEventListener('change', event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) openPhotoEditor(file); });
+el('prepare-photo').addEventListener('click', () => { el('photo').value = ''; el('photo').click(); });
+['zoom', 'brightness', 'contrast', 'saturation'].forEach(key => el(`photo-${key}`).addEventListener('input', event => { photoEdit[key] = Number(event.target.value); renderPhotoCanvas(); }));
+el('photo-ratio').addEventListener('change', renderPhotoCanvas);
+el('rotate-left').addEventListener('click', () => { photoEdit.rotation = (photoEdit.rotation + 270) % 360; renderPhotoCanvas(); });
+el('rotate-right').addEventListener('click', () => { photoEdit.rotation = (photoEdit.rotation + 90) % 360; renderPhotoCanvas(); });
+let dragPhoto;
+photoCanvas.addEventListener('pointerdown', event => { dragPhoto = { x: event.clientX, y: event.clientY }; photoCanvas.setPointerCapture(event.pointerId); });
+photoCanvas.addEventListener('pointermove', event => { if (!dragPhoto) return; const bounds = photoCanvas.getBoundingClientRect(); photoEdit.panX = Math.max(-50, Math.min(50, photoEdit.panX + (event.clientX - dragPhoto.x) / bounds.width * 100)); photoEdit.panY = Math.max(-50, Math.min(50, photoEdit.panY + (event.clientY - dragPhoto.y) / bounds.height * 100)); dragPhoto = { x: event.clientX, y: event.clientY }; renderPhotoCanvas(); });
+photoCanvas.addEventListener('pointerup', () => { dragPhoto = undefined; });
+photoCanvas.addEventListener('pointercancel', () => { dragPhoto = undefined; });
+el('retake-photo').addEventListener('click', () => { el('photo-editor').close(); releasePendingPhoto(); el('photo').click(); });
+el('close-photo-editor').addEventListener('click', () => { el('photo-editor').close(); releasePendingPhoto(); });
+el('photo-editor').addEventListener('cancel', releasePendingPhoto);
+el('confirm-photo').addEventListener('click', async event => {
+  if (!pendingPhotoBitmap) return; const button = event.currentTarget; button.disabled = true; el('photo-editor-message').textContent = 'Enviando foto ao karaokê…';
   try {
-    const bitmap = await createImageBitmap(file); const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height)); const canvas = document.createElement('canvas'); canvas.width = Math.round(bitmap.width * scale); canvas.height = Math.round(bitmap.height * scale); const context = canvas.getContext('2d'); context.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
-    if (currentPerformance.photoFrame === 'Evento') { const size = Math.max(12, Math.round(canvas.width / 55)); context.strokeStyle = '#ff8a00'; context.lineWidth = size; context.strokeRect(size / 2, size / 2, canvas.width - size, canvas.height - size); } else if (currentPerformance.photoFrame === 'Polaroid') { const size = Math.max(20, Math.round(canvas.width / 28)); context.strokeStyle = '#fff'; context.lineWidth = size; context.strokeRect(size / 2, size / 2, canvas.width - size, canvas.height - size); }
-    const stamp = currentPerformance.photoStamp || {}; const lines = []; if (stamp.logo) lines.push('MEU KARAOKÊ'); if (stamp.name) lines.push(currentPerformance.singer || 'Participante'); if (stamp.song) lines.push(currentPerformance.current || ''); if (stamp.score) lines.push(`${currentPerformance.score || 0} pontos`); if (stamp.date) lines.push(new Date().toLocaleString('pt-BR')); if (lines.length) { const fontSize = Math.max(18, Math.round(canvas.width / 42)); const padding = fontSize; const height = lines.length * fontSize * 1.35 + padding * 1.4; context.fillStyle = 'rgba(0,0,0,.68)'; context.fillRect(0, canvas.height - height, canvas.width, height); context.font = `600 ${fontSize}px system-ui`; context.fillStyle = '#fff'; lines.forEach((line, index) => context.fillText(String(line).slice(0, 80), padding, canvas.height - height + padding + fontSize * (index + .7))); }
-    const photoDataUrl = canvas.toDataURL('image/jpeg', .86); el('photo-preview').src = photoDataUrl; el('photo-preview').hidden = false; await call('photo', { photoDataUrl }); el('photo-download').href = photoDataUrl; el('photo-download').hidden = !allowPhotoDownload; el('message').textContent = 'Foto enviada para o karaokê!'; await refresh();
-  } catch (error) { el('message').textContent = error.message; }
+    const photoDataUrl = photoCanvas.toDataURL('image/jpeg', .84); await call('photo', { photoDataUrl });
+    el('photo-preview').src = photoDataUrl; el('photo-preview').hidden = false; el('photo-download').href = photoDataUrl; el('photo-download').hidden = !allowPhotoDownload; el('message').textContent = 'Foto enviada e recebida pelo karaokê!'; el('photo-editor').close(); releasePendingPhoto(); await refresh();
+  } catch (error) { el('photo-editor-message').textContent = error.message || 'Não foi possível enviar a foto. Tente novamente.'; } finally { button.disabled = false; }
 });
-el('photo-offer').querySelector('.camera-button').addEventListener('click', async event => { if (event.target.id !== 'prepare-photo') return; const button = event.target; button.disabled = true; const seconds = Math.max(0, Number(currentPerformance.photoCountdown) || 0); for (let value = seconds; value > 0; value--) { button.textContent = `Câmera em ${value}…`; await new Promise(resolve => setTimeout(resolve, 1000)); } button.textContent = 'Abrir câmera'; button.disabled = false; el('photo').click(); });
 el('pin-form').addEventListener('submit', event => { event.preventDefault(); operatorPin = el('pin').value; try { sessionStorage.setItem('karaoke-operator-pin', operatorPin); } catch { /* Keep the PIN in memory when storage is denied. */ } void refresh(); });
 void updateTheme(0).catch(() => undefined); void refresh(); setInterval(refresh, 2500);
