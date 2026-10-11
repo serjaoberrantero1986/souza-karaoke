@@ -29,6 +29,12 @@ async function updateTheme(version) {
 window.addEventListener('hashchange', () => location.reload());
 const el = id => document.getElementById(id);
 let busy = false;
+function errorMessage(error, fallback = 'Não foi possível concluir. Tente novamente.') {
+  const message = String(error?.message || error || '');
+  if (/timed?\s*out|signal timed out|aborterror/i.test(message)) return 'A conexão demorou demais para responder. Confira o Wi-Fi e tente novamente.';
+  if (/failed to fetch|load failed|networkerror|network request failed|err_connection|connection reset|network is unreachable/i.test(message)) return 'Sem conexão com o computador. Confira se os dois aparelhos estão na mesma rede Wi-Fi.';
+  return message || fallback;
+}
 async function call(action, data = {}) {
   const response = await fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action, deviceId, pin: operatorPin, ...data }), signal: AbortSignal.timeout(20000) });
   const result = await response.json();
@@ -69,11 +75,11 @@ async function refresh() {
     el('score').textContent = state.status === 'scoring' ? (state.scoreNotice || `Pontuação: ${state.score}`) : '';
     const labels = { playing: 'Tocando', paused: 'Pausado', intermission: 'Intervalo', idle: 'Parado', scoring: 'Pontuação', photo: 'Foto' };
     el('playing').textContent = state.current ? `${state.current} · ${labels[state.status] || state.status}` : 'Nenhuma música em reprodução';
-    el('session-history').replaceChildren(...(state.sessionTracks || []).map(item => { const li = document.createElement('li'); const button = document.createElement('button'); button.className = 'history-request'; button.textContent = `${item.title} — ${item.name} · ${item.position}`; button.setAttribute('aria-label', `Pedir ${item.title} novamente`); button.disabled = !state.permissions.allowAdd; button.onclick = async () => { button.disabled = true; try { await call('add', { trackId: item.trackId, name: el('name').value }); el('message').textContent = 'Música adicionada à fila!'; await refresh(); } catch (error) { el('message').textContent = error.message; if (state.permissions.requestName && !el('name').value.trim()) { el('name').scrollIntoView({ block: 'center' }); el('name').focus(); } } finally { button.disabled = !currentPerformance.permissions?.allowAdd; } }; li.append(button); return li; }));
-    el('queue').replaceChildren(...state.queue.map(item => { const li = document.createElement('li'); const label = document.createElement('span'); label.textContent = `${item.title} — ${item.name}`; li.append(label); if (state.role === 'operator') { [['queueUp', '↑'], ['queueDown', '↓'], ['queueRemove', 'Remover']].forEach(([action, text]) => { const button = document.createElement('button'); button.textContent = text; button.onclick = async () => { try { await call(action, { queueId: item.id }); await refresh(); } catch (error) { el('message').textContent = error.message; } }; li.append(button); }); } return li; }));
-  } catch (error) { el('connection').classList.remove('connected'); el('connection').textContent = `Sem conexão: ${error.message}`; }
+    el('session-history').replaceChildren(...(state.sessionTracks || []).map(item => { const li = document.createElement('li'); const button = document.createElement('button'); button.className = 'history-request'; button.textContent = `${item.title} — ${item.name} · ${item.position}`; button.setAttribute('aria-label', `Pedir ${item.title} novamente`); button.disabled = !state.permissions.allowAdd; button.onclick = async () => { button.disabled = true; try { await call('add', { trackId: item.trackId, name: el('name').value }); el('message').textContent = 'Música adicionada à fila!'; await refresh(); } catch (error) { el('message').textContent = errorMessage(error); if (state.permissions.requestName && !el('name').value.trim()) { el('name').scrollIntoView({ block: 'center' }); el('name').focus(); } } finally { button.disabled = !currentPerformance.permissions?.allowAdd; } }; li.append(button); return li; }));
+    el('queue').replaceChildren(...state.queue.map(item => { const li = document.createElement('li'); const label = document.createElement('span'); label.textContent = `${item.title} — ${item.name}`; li.append(label); if (state.role === 'operator') { [['queueUp', '↑'], ['queueDown', '↓'], ['queueRemove', 'Remover']].forEach(([action, text]) => { const button = document.createElement('button'); button.textContent = text; button.onclick = async () => { try { await call(action, { queueId: item.id }); await refresh(); } catch (error) { el('message').textContent = errorMessage(error); } }; li.append(button); }); } return li; }));
+  } catch (error) { el('connection').classList.remove('connected'); el('connection').textContent = 'Sem conexão. Confira se o celular e o computador estão na mesma rede Wi-Fi.'; console.warn('Falha na conexão do controle remoto:', error); }
 }
-el('operator-score').addEventListener('submit', async event => { event.preventDefault(); try { await call('confirmScore', { score: Number(el('manual-score').value) }); el('manual-score').value = ''; await refresh(); } catch (error) { el('message').textContent = error.message; } });
+el('operator-score').addEventListener('submit', async event => { event.preventDefault(); try { await call('confirmScore', { score: Number(el('manual-score').value) }); el('manual-score').value = ''; await refresh(); } catch (error) { el('message').textContent = errorMessage(error); } });
 el('search').addEventListener('submit', async event => {
   event.preventDefault(); if (busy) return; busy = true; el('search-button').disabled = true; el('message').textContent = 'Buscando versões para karaokê…';
   try {
@@ -83,13 +89,13 @@ el('search').addEventListener('submit', async event => {
       const img = document.createElement('img'); img.src = track.thumbnail; img.alt = ''; img.loading = 'lazy';
       const channel = document.createElement('small'); channel.textContent = track.artist;
       const button = document.createElement('button'); button.textContent = 'Pedir música';
-      button.onclick = async () => { button.disabled = true; try { await call('add', { trackId: track.id, name: el('name').value }); el('message').textContent = 'Música adicionada à fila!'; await refresh(); } catch (error) { el('message').textContent = error.message; } finally { button.disabled = false; } };
+      button.onclick = async () => { button.disabled = true; try { await call('add', { trackId: track.id, name: el('name').value }); el('message').textContent = 'Música adicionada à fila!'; await refresh(); } catch (error) { el('message').textContent = errorMessage(error); } finally { button.disabled = false; } };
       row.append(img, title, channel, document.createElement('br'), button); return row;
     }));
     el('message').textContent = result.tracks.length ? 'Escolha sua versão. Os resultados podem incluir voz.' : 'Nenhum resultado encontrado.';
-  } catch (error) { el('message').textContent = error.message; } finally { busy = false; el('search-button').disabled = false; }
+  } catch (error) { el('message').textContent = errorMessage(error); } finally { busy = false; el('search-button').disabled = false; }
 });
-document.querySelectorAll('[data-action]').forEach(button => { button.onclick = async () => { button.disabled = true; try { await call(button.dataset.action); await refresh(); } catch (error) { el('message').textContent = error.message; } finally { await refresh(); } }; });
+document.querySelectorAll('[data-action]').forEach(button => { button.onclick = async () => { button.disabled = true; try { await call(button.dataset.action); await refresh(); } catch (error) { el('message').textContent = errorMessage(error); } finally { await refresh(); } }; });
 function renderRatings(state) {
   if (!el('rating-options').children.length && state.ratingLevels) {
     state.ratingLevels.forEach(level => {
@@ -99,7 +105,7 @@ function renderRatings(state) {
       const label = document.createElement('span'); label.textContent = level.label;
       const points = document.createElement('span'); points.className = 'points'; points.textContent = level.score;
       button.append(emoji, label, points);
-      button.onclick = async () => { button.disabled = true; try { await call('react', { reaction: level.score }); el('rating-feedback').textContent = `Sua nota: ${level.score}/100`; await refresh(); } catch (error) { el('message').textContent = error.message; } finally { button.disabled = false; } };
+      button.onclick = async () => { button.disabled = true; try { await call('react', { reaction: level.score }); el('rating-feedback').textContent = `Sua nota: ${level.score}/100`; await refresh(); } catch (error) { el('message').textContent = errorMessage(error); } finally { button.disabled = false; } };
       el('rating-options').append(button);
     });
   }
@@ -131,7 +137,7 @@ function renderPhotoCanvas() {
 }
 function openPhotoEditor(file) {
   const reader = file ? createImageBitmap(file) : Promise.reject(new Error('Não foi possível abrir a foto.'));
-  reader.then(bitmap => { releasePendingPhoto(); pendingPhotoBitmap = bitmap; photoEdit = { rotation: 0, zoom: 1, brightness: 100, contrast: 100, saturation: 100, panX: 0, panY: 0 }; ['zoom', 'brightness', 'contrast', 'saturation'].forEach(key => { el(`photo-${key}`).value = photoEdit[key]; }); el('photo-ratio').value = '4:3'; el('photo-editor-message').textContent = ''; renderPhotoCanvas(); el('photo-editor').showModal(); }).catch(error => { el('message').textContent = error.message || 'Não foi possível abrir a foto.'; });
+  reader.then(bitmap => { releasePendingPhoto(); pendingPhotoBitmap = bitmap; photoEdit = { rotation: 0, zoom: 1, brightness: 100, contrast: 100, saturation: 100, panX: 0, panY: 0 }; ['zoom', 'brightness', 'contrast', 'saturation'].forEach(key => { el(`photo-${key}`).value = photoEdit[key]; }); el('photo-ratio').value = '4:3'; el('photo-editor-message').textContent = ''; renderPhotoCanvas(); el('photo-editor').showModal(); }).catch(error => { el('message').textContent = errorMessage(error, 'Não foi possível abrir a foto.'); });
 }
 el('photo').addEventListener('change', event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) openPhotoEditor(file); });
 el('prepare-photo').addEventListener('click', () => { el('photo').value = ''; el('photo').click(); });
@@ -152,7 +158,7 @@ el('confirm-photo').addEventListener('click', async event => {
   try {
     const photoDataUrl = photoCanvas.toDataURL('image/jpeg', .84); await call('photo', { photoDataUrl });
     el('photo-preview').src = photoDataUrl; el('photo-preview').hidden = false; el('photo-download').href = photoDataUrl; el('photo-download').hidden = !allowPhotoDownload; el('message').textContent = 'Foto enviada e recebida pelo karaokê!'; el('photo-editor').close(); releasePendingPhoto(); await refresh();
-  } catch (error) { el('photo-editor-message').textContent = error.message || 'Não foi possível enviar a foto. Tente novamente.'; } finally { button.disabled = false; }
+  } catch (error) { el('photo-editor-message').textContent = errorMessage(error, 'Não foi possível enviar a foto. Tente novamente.'); } finally { button.disabled = false; }
 });
 el('pin-form').addEventListener('submit', event => { event.preventDefault(); operatorPin = el('pin').value; try { sessionStorage.setItem('karaoke-operator-pin', operatorPin); } catch { /* Keep the PIN in memory when storage is denied. */ } void refresh(); });
 void updateTheme(0).catch(() => undefined); void refresh(); setInterval(refresh, 2500);
