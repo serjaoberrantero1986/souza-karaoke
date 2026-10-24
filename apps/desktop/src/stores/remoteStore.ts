@@ -15,6 +15,10 @@ declare global { interface Window { desktop?: {
   loadBackgroundMusic: () => Promise<string>;
   selectLocalLibrary: () => Promise<{ folder: string; tracks: import('../types/track').Track[] } | null>;
   loadLocalLibrary: () => Promise<{ folder: string; tracks: import('../types/track').Track[] }>;
+  studioSelectAudio: () => Promise<string>;
+  studioStart: (options: { source: string; mode: 'karaoke' | 'instruments' }) => Promise<import('../pages/studio/studioProject').ProcessedStudioProject | { status: 'cancelled' }>;
+  studioCancel: () => Promise<boolean>;
+  studioListen: (callback: (update: { status: 'processing'; message: string }) => void) => () => void;
   loadYoutubeKey: () => Promise<string>;
   saveYoutubeKey: (key: string) => Promise<void>;
   recoveryStatus: () => Promise<{ email: string }>;

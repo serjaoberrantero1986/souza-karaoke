@@ -5,6 +5,7 @@ const { randomBytes, createHash, timingSafeEqual } = require('node:crypto');
 const { startRendererServer } = require('./renderer-server.cjs');
 const { startRemoteServer } = require('./remote-server.cjs');
 const { registerYoutubeAudio } = require('./youtube-audio.cjs');
+const { registerStudioProcess } = require('./studio-process.cjs');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 let remoteSession;
 const pending = new Map();
@@ -13,6 +14,7 @@ let rendererServer;
 let rendererUrl;
 let audienceWindow;
 let remoteOpening;
+let closeStudioProcess;
 
 async function setAudienceDisplay(enabled) {
   if (!enabled) { audienceWindow?.close(); audienceWindow = undefined; return { active: false, external: false }; }
@@ -46,6 +48,7 @@ async function createWindow() {
 app.whenReady().then(async () => {
   rendererServer = await startRendererServer(path.join(__dirname, '../dist'));
   const closeYoutubeAudio = registerYoutubeAudio(() => process.env.KARAOKE_DEV_URL === 'http://127.0.0.1:5173' ? process.env.KARAOKE_DEV_URL : 'http://127.0.0.1:17843');
+  closeStudioProcess = registerStudioProcess({ ipcMain, dialog, rendererServer, root: path.resolve(__dirname, '../../..') });
   app.on('before-quit', closeYoutubeAudio);
   if (process.env.KARAOKE_DEV_URL !== 'http://127.0.0.1:5173') {
     rendererUrl = 'http://127.0.0.1:17843';
@@ -182,5 +185,5 @@ app.whenReady().then(async () => {
   await createWindow();
   app.on('activate', () => { if (!BrowserWindow.getAllWindows().length) void createWindow(); });
 }).catch(error => { dialog.showErrorBox('Não foi possível iniciar', error.code === 'EADDRINUSE' ? 'A porta local 17843 está ocupada. Feche outra instância do karaokê e tente novamente.' : 'Falha ao carregar o aplicativo. Confira se pnpm build foi executado.'); app.quit(); });
-app.on('before-quit', () => { audienceWindow?.destroy(); rendererServer?.close(); remoteSession?.server.close(); });
+app.on('before-quit', () => { closeStudioProcess?.(); audienceWindow?.destroy(); rendererServer?.close(); remoteSession?.server.close(); });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });

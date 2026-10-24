@@ -11,6 +11,7 @@ import { Photos } from './pages/Photos';
 import { Player } from './pages/Player';
 import { Playlists } from './pages/Playlists';
 import { Settings } from './pages/Settings';
+import { Studio } from './pages/studio/Studio';
 import { usePlayerStore } from './stores/playerStore';
 import { useSettingsStore } from './stores/settingsStore';
 import { useYoutubeStore } from './stores/youtubeStore';
@@ -36,6 +37,6 @@ export function App() {
   }, [isAudience]);
   if (isAudience) return <AudienceDisplay/>;
   return <HashRouter><AppShell>{settings.scoreEnabled && settings.scoreMode === 'microphone' && player.status === 'playing' && <VocalAnalyzer/>}<Routes>
-    <Route path="/" element={null}/><Route path="/karaokes" element={<Karaokes/>}/><Route path="/queue" element={<QueuePage/>}/><Route path="/player" element={<Player/>}/><Route path="/playlists" element={<Playlists/>}/><Route path="/history" element={<History/>}/><Route path="/photos" element={<Photos/>}/><Route path="/settings/:section?" element={<Settings/>}/><Route path="*" element={<Navigate to="/" replace/>}/>
+    <Route path="/" element={null}/><Route path="/karaokes" element={<Karaokes/>}/><Route path="/queue" element={<QueuePage/>}/><Route path="/player" element={<Player/>}/><Route path="/playlists" element={<Playlists/>}/><Route path="/history" element={<History/>}/><Route path="/photos" element={<Photos/>}/><Route path="/settings/:section?" element={<Settings/>}/><Route path="/studio" element={<Studio/>}/><Route path="*" element={<Navigate to="/" replace/>}/>
   </Routes></AppShell></HashRouter>;
 }

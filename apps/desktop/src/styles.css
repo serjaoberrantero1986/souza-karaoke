@@ -216,3 +216,37 @@ svg { flex-shrink: 0; }
 .history-request { display: block; width: 100%; min-width: 0; padding: 4px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .history-request:hover { color: var(--accent); }
 .history-request:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* AI Studio: área administrativa isolada, usando os mesmos tokens visuais do aplicativo. */
+.studio-settings-link { margin-top: auto; display: flex !important; align-items: center; gap: 10px; border-top: 1px solid var(--border) !important; }
+.studio-settings-link span { display: flex; flex-direction: column; align-items: flex-start; }
+.studio-settings-link small { font-size: 10px; font-weight: normal; }
+.studio-panel { width: min(1220px, 88vw); }
+.studio-unlock { margin: auto; width: min(430px, 80%); padding: 36px; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-large); }
+.studio-unlock > svg { color: var(--accent); }
+.studio-unlock form { display: grid; gap: 12px; text-align: left; margin-top: 24px; }
+.studio-unlock form .button { margin-top: 6px; }
+.studio-workspace { height: 100%; min-height: 0; overflow: auto; padding: 24px; }
+.studio-project-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.studio-project-header h2 { margin: 5px 0 0; overflow-wrap: anywhere; }
+.studio-transport { margin: 18px 0; padding: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-medium); }
+.studio-timeline-label { display: flex; justify-content: space-between; gap: 16px; margin-top: 18px; color: var(--text-secondary); font-size: 13px; }
+.studio-timeline { width: 100%; }
+.studio-master { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.studio-master input { width: min(320px, 50%); }
+.studio-tracks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.studio-tracks article { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-medium); padding: 18px; transition: opacity 140ms; }
+.studio-tracks article.muted-track { opacity: .62; }
+.studio-tracks h3 { font-size: 18px; margin-bottom: 14px; }
+.studio-tracks article > label { display: grid; grid-template-columns: auto 1fr 46px; align-items: center; gap: 10px; margin-top: 16px; color: var(--text-secondary); font-size: 12px; }
+.studio-tracks output { text-align: right; color: var(--text-primary); }
+.studio-tracks .button[aria-pressed=true] { background: var(--accent); color: var(--black); }
+.studio-message { min-height: 20px; margin: 16px 0 0; color: var(--text-secondary); }
+.studio-new-project { max-width: 760px; margin: 0 auto; padding: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-large); display: grid; gap: 18px; }
+.studio-new-project > p { margin: 0; color: var(--text-secondary); }
+.studio-new-project > label { display: grid; gap: 8px; }
+.studio-new-project select { width: 100%; }
+.studio-new-project fieldset { display: grid; gap: 10px; border: 1px solid var(--border); border-radius: var(--radius-medium); padding: 16px; }
+.studio-new-project fieldset label { display: flex; align-items: center; gap: 9px; }
+.studio-source { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
+@media (max-width: 1366px) { .studio-panel { width: 90vw; }.studio-workspace { padding: 18px; }.studio-tracks article { padding: 14px; } }
