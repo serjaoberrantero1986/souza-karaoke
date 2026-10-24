@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Studio — mixagem de faixas</title>
+  <link rel="stylesheet" href="mixer.css">
+</head>
+<body>
+  <main>
+    <header><span class="eyebrow">STUDIO · PRODUÇÃO DE KARAOKÊ</span><h1>Uma música. Cada detalhe.</h1><p id="title"></p></header>
+    <section class="transport" aria-label="Reprodução">
+      <label class="source-label">Ouvir <select id="group" disabled></select></label>
+      <div class="buttons"><button id="play" class="primary" disabled>▶ Reproduzir</button><button id="restart" disabled>↶ Reiniciar</button><button id="reset" disabled>Restaurar volumes</button></div>
+      <label class="timeline-label" for="timeline">Posição na música <output id="time">0:00 / 0:00</output></label>
+      <input id="timeline" type="range" min="0" max="1" step="0.01" value="0" disabled>
+      <label class="master">Volume geral <input id="master" type="range" min="0" max="100" value="50"><output id="master-value">50%</output></label>
+    </section>
+    <p id="status" role="status">Carregando projeto…</p>
+    <div id="tracks" class="tracks"></div>
+    <footer>As faixas tocam sincronizadas. “Ouvir só” pode combinar mais de uma faixa; “Silenciar” sempre prevalece. As alterações de volume não modificam os arquivos.<p>A separação precisa de revisão auditiva. Os volumes do Moises e do Studio podem diferir; volume maior não significa qualidade melhor.</p></footer>
+  </main>
+  <script type="module" src="mixer-ui.mjs"></script>
+</body>
+</html>

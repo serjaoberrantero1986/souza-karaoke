@@ -18,3 +18,9 @@ remote-tokens.json
 Thumbs.db
 # Original reference archive (the extracted reference images are in docs).
 docs/*.zip
+
+# Studio: ambientes, modelos e músicas de trabalho ficam somente neste computador.
+.studio-venv*/
+.studio-data/
+musicas/
+__pycache__/
